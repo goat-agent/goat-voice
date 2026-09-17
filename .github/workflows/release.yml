@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags: ['v[0-9]*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag, matching release.json
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: goat-voice-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Validate and package
+    if: github.event_name == 'push' || github.ref == 'refs/heads/main'
+    runs-on: macos-26
+    timeout-minutes: 45
+    outputs:
+      commit: ${{ steps.source.outputs.commit }}
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      JOBS: 4
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate source
+        id: source
+        run: |
+          python3 tools/release.py validate-tag "$RELEASE_TAG"
+          git merge-base --is-ancestor HEAD origin/main
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            .build/checkouts
+            .build/repositories
+            .build/artifacts
+          key: ${{ runner.os }}-${{ runner.arch }}-xcode26.6-${{ hashFiles('Package.resolved') }}
+      - name: Prepare toolchain
+        run: bash scripts/ci-setup.sh
+      - name: Tests
+        run: |
+          python3 tools/collect-third-party-notices.py --check
+          python3 -m unittest discover -s Tests -p 'test_*.py'
+          xcrun swift test -j 4
+      - name: Build and verify
+        run: |
+          bash scripts/build-app.sh
+          bash scripts/check-bundle.sh
+          bash scripts/prepare-release.sh
+      - name: Retain exact release artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-bundle
+          path: build/release/
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Sign and publish
+    needs: build
+    runs-on: macos-26
+    timeout-minutes: 15
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ needs.build.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: release-bundle
+          path: build/release
+      - name: Sign archive and verify its public key
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          chmod +x build/release/tools/sign_update build/release/tools/verify_update
+          python3 tools/release.py sign build/release build/release/tools/sign_update build/release/tools/verify_update
+      - name: Publish release, then update feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/publish-release.py build/release

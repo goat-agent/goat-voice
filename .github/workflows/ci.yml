@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Apple Silicon build and tests
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      JOBS: 4
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - name: Cache pinned dependencies
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            .build/checkouts
+            .build/repositories
+            .build/artifacts
+          key: ${{ runner.os }}-${{ runner.arch }}-xcode26.6-${{ hashFiles('Package.resolved') }}
+      - name: Prepare toolchain
+        run: bash scripts/ci-setup.sh
+      - name: Validate release configuration and tooling
+        run: |
+          python3 tools/release.py metadata
+          python3 tools/collect-third-party-notices.py --check
+          python3 -m unittest discover -s Tests -p 'test_*.py'
+          bash -n scripts/*.sh
+      - name: Swift tests
+        run: xcrun swift test -j 4
+      - name: Build application
+        run: bash scripts/build-app.sh
+      - name: Verify bundle and embedded XPC
+        run: bash scripts/check-bundle.sh
