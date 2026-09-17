@@ -1,80 +1,10 @@
 import AppKit
 import Foundation
 
-struct AudioLevelHistory: Equatable, Sendable {
-    let capacity: Int
-    private(set) var samples: [Double] = []
-
-    init(capacity: Int) {
-        self.capacity = max(1, capacity)
-    }
-
-    mutating func push(_ level: Double) {
-        samples.append(level.isFinite ? min(max(level, 0), 1) : 0)
-        if samples.count > capacity {
-            samples.removeFirst(samples.count - capacity)
-        }
-    }
-
-    mutating func reset() {
-        samples.removeAll(keepingCapacity: true)
-    }
-
-    var bars: [Double] {
-        guard samples.count < capacity else { return samples }
-        return Array(repeating: 0, count: capacity - samples.count) + samples
-    }
-}
-
-final class WaveformHistoryView: NSView {
-    static func visibleLevel(forRMS rms: Double) -> Double {
-        guard rms.isFinite, rms > 0 else { return 0 }
-        return min(max((20 * log10(rms) + 54) / 48, 0), 1)
-    }
-
-    var dimmed = false {
-        didSet { needsDisplay = true }
-    }
-
-    private(set) var history = AudioLevelHistory(capacity: CapsuleMetrics.waveformBarCapacity)
-
-    override var intrinsicContentSize: NSSize { CapsuleMetrics.waveformSize }
-
-    func push(_ level: Double) {
-        history.push(level)
-        needsDisplay = true
-    }
-
-    func reset() {
-        history.reset()
-        needsDisplay = true
-    }
-
-    override func draw(_ dirtyRect: NSRect) {
-        let bars = history.bars
-        guard !bars.isEmpty else { return }
-        let barWidth: CGFloat = 3
-        let gap: CGFloat = 2
-        let totalWidth = CGFloat(bars.count) * barWidth + CGFloat(bars.count - 1) * gap
-        var x = max(0, (bounds.width - totalWidth) / 2)
-        for level in bars {
-            let visible = Self.visibleLevel(forRMS: level)
-            let height = max(2, bounds.height * CGFloat(visible))
-            let rect = CGRect(
-                x: x, y: (bounds.height - height) / 2, width: barWidth, height: height)
-            let color = NSColor.secondaryLabelColor
-            (dimmed ? color.withAlphaComponent(0.35) : color).setFill()
-            NSBezierPath(
-                roundedRect: rect, xRadius: barWidth / 2, yRadius: barWidth / 2
-            ).fill()
-            x += barWidth + gap
-        }
-    }
-}
-
 final class IndicatorView: NSView {
     var reduceMotion = false {
         didSet {
+            waveformView.reduceMotion = reduceMotion
             guard reduceMotion else { return }
             capsule.layer?.removeAllAnimations()
         }
@@ -87,7 +17,6 @@ final class IndicatorView: NSView {
     private let capsule = NSVisualEffectView()
     private let waveformView = WaveformHistoryView()
     private let statusLabel = NSTextField(labelWithString: "Listening")
-    private let previewCaption = NSTextField(labelWithString: "Preview · may change")
     private let previewLabel = NSTextView(frame: .zero)
     private let hudView = HUDView()
 
@@ -108,8 +37,6 @@ final class IndicatorView: NSView {
 
         statusLabel.font = .systemFont(ofSize: 12, weight: .semibold)
         statusLabel.textColor = .labelColor
-        previewCaption.font = .systemFont(ofSize: 10, weight: .medium)
-        previewCaption.textColor = .secondaryLabelColor
 
         previewLabel.font = CapsuleMetrics.previewFont
         previewLabel.textColor = .labelColor
@@ -120,10 +47,8 @@ final class IndicatorView: NSView {
         previewLabel.textContainer?.lineFragmentPadding = 0
         previewLabel.textContainer?.widthTracksTextView = true
 
-
         capsule.addSubview(waveformView)
         capsule.addSubview(statusLabel)
-        capsule.addSubview(previewCaption)
         capsule.addSubview(previewLabel)
         capsule.isHidden = true
         addSubview(capsule)
@@ -162,16 +87,12 @@ final class IndicatorView: NSView {
         waveformView.frame = CGRect(
             x: bounds.width - x - waveSize.width, y: headerY - waveSize.height / 2,
             width: waveSize.width, height: waveSize.height)
-        previewCaption.isHidden = preview == nil
         previewLabel.isHidden = preview == nil
         if preview != nil {
             let textWidth = max(0, bounds.width - x * 2)
-            previewCaption.frame = CGRect(
-                x: x, y: bounds.height - CapsuleMetrics.baseHeight - 11,
-                width: textWidth, height: 12)
             previewLabel.frame = CGRect(
                 x: x, y: 10, width: textWidth,
-                height: max(0, bounds.height - CapsuleMetrics.baseHeight - 28))
+                height: max(0, bounds.height - CapsuleMetrics.baseHeight - 12))
         }
     }
 
@@ -188,7 +109,7 @@ final class IndicatorView: NSView {
         let visibleText = Self.visiblePreview(preview, width: textWidth)
         previewLabel.string = visibleText
         let textHeight = PreviewTextLayout.height(of: visibleText, width: textWidth)
-        return CGSize(width: cap, height: CapsuleMetrics.baseHeight + 28 + textHeight)
+        return CGSize(width: cap, height: CapsuleMetrics.baseHeight + 12 + textHeight)
     }
 
     static func visiblePreview(_ text: String, width: CGFloat) -> String {
