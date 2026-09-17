@@ -41,32 +41,43 @@ jobs:
           python3 tools/release.py validate-tag "$RELEASE_TAG"
           git merge-base --is-ancestor HEAD origin/main
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25
         with:
-          path: |
-            .build/checkouts
-            .build/repositories
-            .build/artifacts
-          key: ${{ runner.os }}-${{ runner.arch }}-xcode26.6-${{ hashFiles('Package.resolved') }}
+          path: .build
+          key: ${{ runner.os }}-${{ runner.arch }}-xcode26.6-${{ hashFiles('Package.swift', 'Package.resolved') }}
       - name: Prepare toolchain
         run: bash scripts/ci-setup.sh
       - name: Tests
         run: |
           python3 tools/collect-third-party-notices.py --check
           python3 -m unittest discover -s Tests -p 'test_*.py'
-          xcrun swift test -j 4
+          set -o pipefail
+          mkdir -p build
+          xcrun swift test -j 4 --xunit-output build/test-results.xml 2>&1 | tee build/test.log
       - name: Build and verify
         run: |
           bash scripts/build-app.sh
           bash scripts/check-bundle.sh
           bash scripts/prepare-release.sh
       - name: Retain exact release artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: release-bundle
           path: build/release/
           if-no-files-found: error
           retention-days: 14
+
+      - name: Retain failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: release-failure-diagnostics
+          path: |
+            build/test-results.xml
+            build/test.log
+            ~/Library/Logs/DiagnosticReports/xctest*.ips
+          if-no-files-found: ignore
+          retention-days: 7
 
   publish:
     name: Sign and publish
@@ -81,7 +92,7 @@ jobs:
         with:
           ref: ${{ needs.build.outputs.commit }}
           persist-credentials: false
-      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: release-bundle
           path: build/release
