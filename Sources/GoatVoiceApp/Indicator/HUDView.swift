@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 
 final class HUDView: NSView {
-    static let widthRange: ClosedRange<CGFloat> = 220...300
+    static let widthRange: ClosedRange<CGFloat> = 160...380
     static let heightRange: ClosedRange<CGFloat> = 32...38
 
     var onAction: (() -> Void)?
@@ -38,23 +38,23 @@ final class HUDView: NSView {
         actionButton.target = self
         actionButton.action = #selector(actionPressed)
 
-        addSubview(effectView)
-        effectView.addSubview(messageLabel)
-        effectView.addSubview(actionButton)
+        let content = NSStackView(views: [messageLabel, actionButton])
+        content.orientation = .horizontal
+        content.alignment = .centerY
+        content.spacing = 10
+        content.detachesHiddenViews = true
+        content.translatesAutoresizingMaskIntoConstraints = false
 
+        addSubview(effectView)
+        effectView.addSubview(content)
         NSLayoutConstraint.activate([
             effectView.leadingAnchor.constraint(equalTo: leadingAnchor),
             effectView.trailingAnchor.constraint(equalTo: trailingAnchor),
             effectView.topAnchor.constraint(equalTo: topAnchor),
             effectView.bottomAnchor.constraint(equalTo: bottomAnchor),
-
-            messageLabel.leadingAnchor.constraint(equalTo: effectView.leadingAnchor, constant: 14),
-            messageLabel.centerYAnchor.constraint(equalTo: effectView.centerYAnchor),
-
-            actionButton.leadingAnchor.constraint(
-                equalTo: messageLabel.trailingAnchor, constant: 10),
-            actionButton.trailingAnchor.constraint(equalTo: effectView.trailingAnchor, constant: -10),
-            actionButton.centerYAnchor.constraint(equalTo: effectView.centerYAnchor),
+            content.leadingAnchor.constraint(equalTo: effectView.leadingAnchor, constant: 14),
+            content.trailingAnchor.constraint(equalTo: effectView.trailingAnchor, constant: -14),
+            content.centerYAnchor.constraint(equalTo: effectView.centerYAnchor),
         ])
     }
 
@@ -79,7 +79,7 @@ final class HUDView: NSView {
     override var intrinsicContentSize: NSSize {
         let labelWidth = messageLabel.intrinsicContentSize.width
         let buttonWidth = actionButton.isHidden ? 0 : actionButton.intrinsicContentSize.width + 10
-        let width = (14 + labelWidth + buttonWidth + 10).clamped(to: Self.widthRange)
+        let width = (28 + labelWidth + buttonWidth).clamped(to: Self.widthRange)
         return NSSize(width: width, height: CGFloat(34).clamped(to: Self.heightRange))
     }
 
