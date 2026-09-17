@@ -38,7 +38,7 @@ Building requires Apple Silicon, full Xcode with the Metal toolchain, and Swift 
 ```sh
 JOBS=4 bash scripts/build-app.sh
 open "build/Goat Voice.app"
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcrun swift test --build-system swiftbuild -j 4
+JOBS=4 bash scripts/test.sh
 python3 -m unittest discover -s Tests -p 'test_*.py'
 bash scripts/check-bundle.sh
 ```

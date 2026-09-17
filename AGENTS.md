@@ -40,7 +40,7 @@ Use full Xcode, including its Metal toolchain. If the system selects Command Lin
 
 ```sh
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcrun swift build -j 4
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcrun swift test -j 4
+JOBS=4 bash scripts/test.sh
 python3 -m unittest discover -s Tests -p test_release_evaluation.py
 JOBS=4 bash scripts/build-app.sh
 bash scripts/check-bundle.sh
