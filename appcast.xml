@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+  <channel>
+    <title>Goat Voice</title>
+    <link>https://github.com/goat-agent/goat-voice</link>
+    <description>Goat Voice updates</description>
+    <item>
+      <title>Goat Voice 0.1.4</title>
+      <pubDate>Thu, 17 Sep 2026 02:30:31 +0000</pubDate>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <enclosure url="https://github.com/goat-agent/goat-voice/releases/download/v0.1.4/GoatVoice-0.1.4-arm64.dmg" length="36039545" type="application/octet-stream" sparkle:version="5" sparkle:shortVersionString="0.1.4" sparkle:edSignature="MR+Ky+1FS9YoVvX/zKJFziWqDngs19E/69D4rOoFZLSGEQU3jqNv6U9ujKv8+YG0qt+D9klvxTjnqhJB5dSAAw==" />
+    </item>
+  </channel>
+</rss>
