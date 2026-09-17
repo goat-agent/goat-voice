@@ -8,18 +8,16 @@ final class FinalClipboardOwnershipTests: XCTestCase {
         let board = GatedPasteboard()
         let recovery = RecoveryController(
             clipboard: ClipboardCoordinator(backend: board), clock: MonotonicClock())
-        board.gate.arm(afterCalls: 1)
+        let invalidated = expectation(description: "Invalidated inside clipboard read")
+        board.onNextChangeCountRead {
+            recovery.invalidateSynchronously()
+            invalidated.fulfill()
+        }
         recovery.present(prepared: nil, transcript: "discard this",
                          release: ReleaseContext(finishReason: .microphoneDisconnected,
                                                  boundaryChangeCount: 1, target: nil),
                          displayID: nil)
-        for _ in 0..<100 {
-            if board.gate.entered { break }
-            try await Task.sleep(for: .milliseconds(5))
-        }
-        XCTAssertTrue(board.gate.entered)
-        recovery.invalidateSynchronously()
-        board.gate.release()
+        await fulfillment(of: [invalidated], timeout: 2)
         try await Task.sleep(for: .milliseconds(50))
         XCTAssertEqual(board.writeCount, 0)
         XCTAssertEqual(board.plainText(), "seed")
