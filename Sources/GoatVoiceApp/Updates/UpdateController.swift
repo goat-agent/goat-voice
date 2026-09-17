@@ -95,6 +95,7 @@ final class UpdateController: UpdateChecking {
         )
         updater.automaticallyChecksForUpdates = false
         updater.automaticallyDownloadsUpdates = false
+        updater.sendsSystemProfile = false
         try updater.start()
         return updater
     }
