@@ -33,12 +33,12 @@ Only final text is eligible for insertion. The app checks the focused target, us
 
 ## Build and test
 
-Building requires Apple Silicon, full Xcode with the Metal toolchain, and Swift 6.3 or later. The app targets macOS 14 or later. CI uses the GitHub `macos-26` runner with Xcode 26.6.
+Building requires Apple Silicon, full Xcode with the Metal toolchain, and Swift 6.3 or later. The app targets macOS 14 or later. CI uses the GitHub `macos-26` runner with Xcode 26.6 and the Swift Build engine, matching the local module-isolated test layout.
 
 ```sh
 JOBS=4 bash scripts/build-app.sh
 open "build/Goat Voice.app"
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcrun swift test -j 4
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcrun swift test --build-system swiftbuild -j 4
 python3 -m unittest discover -s Tests -p 'test_*.py'
 bash scripts/check-bundle.sh
 ```

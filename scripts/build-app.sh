@@ -15,11 +15,11 @@ XPC_BUNDLE="$APP_BUNDLE/Contents/XPCServices/$XPC_NAME.xpc"
 cd "$ROOT"
 
 echo "Building GoatVoiceApp ($CONFIGURATION, -j$JOBS, scratch $SCRATCH_PATH)"
-xcrun swift build -c "$CONFIGURATION" -j "$JOBS" --scratch-path "$SCRATCH_PATH" --product GoatVoiceApp
+xcrun swift build --build-system swiftbuild -c "$CONFIGURATION" -j "$JOBS" --scratch-path "$SCRATCH_PATH" --product GoatVoiceApp
 echo "Building GoatVoiceService ($CONFIGURATION, -j$JOBS)"
-xcrun swift build -c "$CONFIGURATION" -j "$JOBS" --scratch-path "$SCRATCH_PATH" --product GoatVoiceService
+xcrun swift build --build-system swiftbuild -c "$CONFIGURATION" -j "$JOBS" --scratch-path "$SCRATCH_PATH" --product GoatVoiceService
 
-BIN_PATH="$(xcrun swift build -c "$CONFIGURATION" --scratch-path "$SCRATCH_PATH" --show-bin-path)"
+BIN_PATH="$(xcrun swift build --build-system swiftbuild -c "$CONFIGURATION" --scratch-path "$SCRATCH_PATH" --show-bin-path)"
 APP_PRODUCT="$BIN_PATH/GoatVoiceApp"
 XPC_PRODUCT="$BIN_PATH/GoatVoiceService"
 

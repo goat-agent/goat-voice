@@ -30,7 +30,7 @@ jobs:
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25
         with:
           path: .build
-          key: ${{ runner.os }}-${{ runner.arch }}-xcode26.6-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-xcode26.6-swiftbuild-${{ hashFiles('Package.swift', 'Package.resolved') }}
       - name: Prepare toolchain
         run: bash scripts/ci-setup.sh
       - name: Validate release configuration and tooling
@@ -43,7 +43,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p build
-          xcrun swift test -j 4 --xunit-output build/test-results.xml 2>&1 | tee build/test.log
+          xcrun swift test --build-system swiftbuild -j 4 --xunit-output build/test-results.xml 2>&1 | tee build/test.log
       - name: Build application
         run: bash scripts/build-app.sh
       - name: Verify bundle and embedded XPC
