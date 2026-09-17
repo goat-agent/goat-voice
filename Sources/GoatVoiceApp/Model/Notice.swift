@@ -26,17 +26,17 @@ struct Notice: Equatable, Sendable {
 
     var text: String {
         switch message {
-        case .microphoneAccessRequired: return "Microphone access required"
-        case .accessibilityRequired: return "Accessibility access required"
+        case .microphoneAccessRequired: return "Allow microphone access"
+        case .accessibilityRequired: return "Allow Accessibility access"
         case .shortcutUnavailable: return "Shortcut unavailable"
         case .modelNotReady: return "Model not ready"
         case .modelDownloading: return "Model downloading"
-        case .modelFailedToLoad: return "Model failed to load"
+        case .modelFailedToLoad: return "Couldn’t load model"
         case .microphoneUnavailable: return "Microphone unavailable"
         case .microphoneDisconnected: return "Microphone disconnected"
-        case .transcriptionFailed: return "Transcription failed"
-        case .copiedToClipboard: return "Copied to clipboard"
-        case .couldntInsert: return "Couldn't insert"
+        case .transcriptionFailed: return "Couldn’t transcribe"
+        case .copiedToClipboard: return "Copied"
+        case .couldntInsert: return "Text ready to copy"
         case .oneMinuteRemaining: return "1 minute remaining"
         }
     }
