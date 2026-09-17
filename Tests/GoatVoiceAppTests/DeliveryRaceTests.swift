@@ -48,8 +48,18 @@ final class GatedPasteboard: PasteboardBackend, @unchecked Sendable {
     private var items: [[String: Data]] = [["public.utf8-plain-text": Data("seed".utf8)]]
     private var count = 1
     private var writes: [[[String: Data]]] = []
+    private var nextRead: (@Sendable () -> Void)?
+
+    func onNextChangeCountRead(_ action: @escaping @Sendable () -> Void) {
+        lock.withLock { nextRead = action }
+    }
 
     var changeCount: Int {
+        let action = lock.withLock { () -> (@Sendable () -> Void)? in
+            defer { nextRead = nil }
+            return nextRead
+        }
+        action?()
         gate.track()
         return lock.withLock { count }
     }

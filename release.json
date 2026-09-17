@@ -1,0 +1,8 @@
+{
+  "version": "0.1.4",
+  "build": 5,
+  "prerelease": true,
+  "repository": "goat-agent/goat-voice",
+  "feedURL": "https://raw.githubusercontent.com/goat-agent/goat-voice/updates/appcast.xml",
+  "publicKey": "k3O2s186dYmsBsI2hHC8p5Hb3q3eNm1YrHJLUylrj3Q="
+}

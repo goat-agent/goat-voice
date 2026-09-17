@@ -15,11 +15,11 @@ XPC_BUNDLE="$APP_BUNDLE/Contents/XPCServices/$XPC_NAME.xpc"
 cd "$ROOT"
 
 echo "Building GoatVoiceApp ($CONFIGURATION, -j$JOBS, scratch $SCRATCH_PATH)"
-xcrun swift build -c "$CONFIGURATION" -j "$JOBS" --scratch-path "$SCRATCH_PATH" --product GoatVoiceApp
+xcrun swift build --build-system swiftbuild -c "$CONFIGURATION" -j "$JOBS" --scratch-path "$SCRATCH_PATH" --product GoatVoiceApp
 echo "Building GoatVoiceService ($CONFIGURATION, -j$JOBS)"
-xcrun swift build -c "$CONFIGURATION" -j "$JOBS" --scratch-path "$SCRATCH_PATH" --product GoatVoiceService
+xcrun swift build --build-system swiftbuild -c "$CONFIGURATION" -j "$JOBS" --scratch-path "$SCRATCH_PATH" --product GoatVoiceService
 
-BIN_PATH="$(xcrun swift build -c "$CONFIGURATION" --scratch-path "$SCRATCH_PATH" --show-bin-path)"
+BIN_PATH="$(xcrun swift build --build-system swiftbuild -c "$CONFIGURATION" --scratch-path "$SCRATCH_PATH" --show-bin-path)"
 APP_PRODUCT="$BIN_PATH/GoatVoiceApp"
 XPC_PRODUCT="$BIN_PATH/GoatVoiceService"
 
@@ -47,7 +47,10 @@ if [[ -z "$SPARKLE_FW" ]]; then
     exit 1
 fi
 
-rm -rf "$APP_BUNDLE"
+if [[ -d "$APP_BUNDLE" ]]; then
+    PREVIOUS_BUNDLE=$(mktemp -d "$BUILD_DIR/previous-bundle.XXXXXX")
+    mv "$APP_BUNDLE" "$PREVIOUS_BUNDLE/$APP_NAME.app"
+fi
 mkdir -p \
     "$APP_BUNDLE/Contents/MacOS" \
     "$APP_BUNDLE/Contents/Resources" \
@@ -65,6 +68,9 @@ else
     echo "error: Resources/GoatVoiceService/Info.plist missing" >&2
     exit 1
 fi
+
+python3 "$ROOT/tools/release.py" configure-bundle "$APP_BUNDLE"
+cp "$ROOT/LICENSE" "$ROOT/THIRD_PARTY_NOTICES.txt" "$APP_BUNDLE/Contents/Resources/"
 
 if [[ -d "$ROOT/Resources/Models" ]]; then
     mkdir -p "$APP_BUNDLE/Contents/Resources/Models"
